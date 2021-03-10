@@ -1,4 +1,9 @@
-version: '2'
+version: '3.8'
+
+networks:
+  zammad:
+    name: zammad
+    driver: bridge
 
 services:
 
@@ -13,8 +18,9 @@ services:
       - POSTGRESQL_USER=${POSTGRES_USER}
       - POSTGRESQL_PASSWORD=${POSTGRES_PASS}
     image: ${IMAGE_REPO}:zammad-postgresql${VERSION}
-    links:
-      - zammad-postgresql
+    container_name: zammad-backup
+    networks:
+      - zammad
     restart: ${RESTART}
     volumes:
       - zammad-backup:/var/tmp/zammad
@@ -24,6 +30,9 @@ services:
     environment:
       - discovery.type=single-node
     image: ${IMAGE_REPO}:zammad-elasticsearch${VERSION}
+    container_name: zammad-elasticsearch
+    networks:
+      - zammad
     restart: ${RESTART}
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
@@ -36,9 +45,9 @@ services:
       - POSTGRESQL_USER=${POSTGRES_USER}
       - POSTGRESQL_PASS=${POSTGRES_PASS}
     image: ${IMAGE_REPO}:zammad${VERSION}
-    links:
-      - zammad-elasticsearch
-      - zammad-postgresql
+    container_name: zammad-init
+    networks:
+      - zammad
     restart: on-failure
     volumes:
       - zammad-data:/opt/zammad
@@ -46,6 +55,9 @@ services:
   zammad-memcached:
     command: memcached -m 256M
     image: memcached:1.6.9-alpine
+    container_name: zammad-memcached
+    networks:
+      - zammad
     restart: ${RESTART}
 
   zammad-nginx:
@@ -55,9 +67,9 @@ services:
     depends_on:
       - zammad-railsserver
     image: ${IMAGE_REPO}:zammad${VERSION}
-    links:
-      - zammad-railsserver
-      - zammad-websocket
+    container_name: zammad-nginx
+    networks:
+      - zammad
     restart: ${RESTART}
     volumes:
       - zammad-data:/opt/zammad
@@ -67,6 +79,9 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASS}
     image: ${IMAGE_REPO}:zammad-postgresql${VERSION}
+    container_name: zammad-postgresql
+    networks:
+      - zammad
     restart: ${RESTART}
     volumes:
       - postgresql-data:/var/lib/postgresql/data
@@ -77,10 +92,9 @@ services:
       - zammad-memcached
       - zammad-postgresql
     image: ${IMAGE_REPO}:zammad${VERSION}
-    links:
-      - zammad-elasticsearch
-      - zammad-memcached
-      - zammad-postgresql
+    container_name: zammad-railsserver
+    networks:
+      - zammad
     restart: ${RESTART}
     volumes:
       - zammad-data:/opt/zammad
@@ -91,10 +105,9 @@ services:
       - zammad-memcached
       - zammad-railsserver
     image: ${IMAGE_REPO}:zammad${VERSION}
-    links:
-      - zammad-elasticsearch
-      - zammad-memcached
-      - zammad-postgresql
+    container_name: zammad-scheduler
+    networks:
+      - zammad
     restart: ${RESTART}
     volumes:
       - zammad-data:/opt/zammad
@@ -105,9 +118,9 @@ services:
       - zammad-memcached
       - zammad-railsserver
     image: ${IMAGE_REPO}:zammad${VERSION}
-    links:
-      - zammad-postgresql
-      - zammad-memcached
+    container_name: zammad-websocket
+    networks:
+      - zammad
     restart: ${RESTART}
     volumes:
       - zammad-data:/opt/zammad
